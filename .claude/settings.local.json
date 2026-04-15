@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python google_reviews_worker.py --limit 10 --headed --dry-run)",
+      "Bash(pip install:*)",
+      "Bash(playwright install:*)",
+      "Bash(python -m playwright install chromium)",
+      "Bash(PYTHONIOENCODING=utf-8 python google_reviews_worker.py --limit 10 --headed --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 python google_reviews_worker.py --limit 5 --dry-run --skip-playwright)",
+      "Bash(PYTHONIOENCODING=utf-8 python google_reviews_worker.py --limit 5 --headed --dry-run)",
+      "Bash(python)",
+      "Bash(PYTHONIOENCODING=utf-8 python)",
+      "Bash(python -m py_compile \"C:\\\\Users\\\\Dell\\\\Documents\\\\projects\\\\pipeline_projects\\\\siren\\\\google_reviews_worker.py\")",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 30 python google_reviews_worker.py --limit 1 --dry-run --skip-playwright)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 45 python google_reviews_worker.py --limit 1 --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 50 python google_reviews_worker.py --limit 2 --dry-run)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 60 python google_reviews_worker.py --limit 10 --dry-run --skip-playwright)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 120 python google_reviews_worker.py --limit 5 --dry-run --skip-playwright)",
+      "Bash(PYTHONIOENCODING=utf-8 timeout 120 python google_reviews_worker.py --limit 2 --dry-run)",
+      "Bash(python -m py_compile google_reviews_worker.py)",
+      "Bash(python google_reviews_worker.py --limit 1 --headless --dry-run)",
+      "Bash(python google_reviews_worker.py --limit 1 --dry-run)",
+      "Bash(python -c \"import google_reviews_worker; print\\('[INFO] Script imports successfully - all fixes are in place'\\)\")",
+      "Bash(python -m py_compile check_db_columns.py)",
+      "Bash(python check_db_columns.py)",
+      "Bash(python -c ':*)"
+    ]
+  }
+}
