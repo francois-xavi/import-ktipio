@@ -23,7 +23,10 @@
       "Bash(python -c \"import google_reviews_worker; print\\('[INFO] Script imports successfully - all fixes are in place'\\)\")",
       "Bash(python -m py_compile check_db_columns.py)",
       "Bash(python check_db_columns.py)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(ls -la *.py *.md)",
+      "Bash(ls -1 *.py *.md)",
+      "Bash(gh pr create --title 'Fix: Critical bugs in company enrichment pipeline - Database column selection & connection stability' --body ':*)"
     ]
   }
 }
