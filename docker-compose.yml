@@ -1,0 +1,80 @@
+version: '3.9'
+
+services:
+  enrichment-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ktipio-enrichment-worker
+    image: ktipio/enrichment:latest
+
+    # Environment variables
+    environment:
+      # Database connection (use your Neon database URL)
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+
+      # Python configuration
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+
+      # Playwright configuration (headless mode)
+      PLAYWRIGHT_HEADLESS: "1"
+      PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
+
+      # Logging
+      LOG_LEVEL: "INFO"
+
+    # Mount points for persistent data
+    volumes:
+      # Database connection cache
+      - ./data:/app/data
+      # Output logs
+      - ./logs:/app/logs
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+    # Network configuration
+    networks:
+      - ktipio-network
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Default command - can be overridden
+    # Examples:
+    # docker-compose run enrichment-worker --limit 1 --dry-run
+    # docker-compose run enrichment-worker --batch-size 50 --delay 10
+    command: --help
+
+  # Optional: PostgreSQL for testing locally (comment out if using Neon)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: ktipio-postgres
+  #   environment:
+  #     POSTGRES_USER: ktipio
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+  #     POSTGRES_DB: companies
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - ktipio-network
+  #   restart: unless-stopped
+
+networks:
+  ktipio-network:
+    driver: bridge
+
+volumes:
+  # Uncomment if using local PostgreSQL
+  # postgres_data:
+  #   driver: local

@@ -1,0 +1,104 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+.venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+
+# Documentation
+docs/
+*.md
+!README.md
+!DOCKERFILE_README.md
+
+# Environment files (local, don't include in image)
+.env
+.env.local
+.env.*.local
+
+# Data and logs (local only)
+data/
+logs/
+*.log
+
+# Node/frontend (if any)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Claude Code
+.claude/
+.claude/projects/
+
+# Docker files (don't need copies in image)
+.dockerignore
+docker-compose*.yml
+Dockerfile
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.circleci/
+.travis.yml
+
+# Misc
+README.md
+LICENSE
+*.sqlite
+*.db

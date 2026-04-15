@@ -29,7 +29,11 @@
       "Bash(gh pr create --title 'Fix: Critical bugs in company enrichment pipeline - Database column selection & connection stability' --body ':*)",
       "Bash(where gh:*)",
       "Bash(gh --version)",
-      "Bash(timeout 10 powershell -NoProfile -Command 'gh pr create --title '\\\\''Fix: Critical bugs in company enrichment pipeline'\\\\'' --body '\\\\''Fixed 4 critical bugs causing enrichment pipeline failure::*)"
+      "Bash(timeout 10 powershell -NoProfile -Command 'gh pr create --title '\\\\''Fix: Critical bugs in company enrichment pipeline'\\\\'' --body '\\\\''Fixed 4 critical bugs causing enrichment pipeline failure::*)",
+      "Bash(ls -lh Dockerfile docker-compose.yml .dockerignore)",
+      "Bash(ls -lh DOCKER*.md)",
+      "Bash(ls -lh Dockerfile docker-compose.yml .dockerignore docker-run.* .env.example)",
+      "Bash(ls -1 Dockerfile docker-compose.yml .dockerignore docker-run.* DOCKER*.md .env.example)"
     ]
   }
 }
