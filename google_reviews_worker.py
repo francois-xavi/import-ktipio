@@ -376,6 +376,48 @@ def ensure_page_valid(page: Page, ctx) -> Page:
         return ctx.new_page()
 
 
+def ensure_browser_valid(pw, browser, ctx, page, headed: bool = False):
+    """
+    Vérifie que le browser est vivant. Si crashé, recrée browser + context + page.
+    Retourne (browser, ctx, page).
+    """
+    try:
+        _ = page.title()
+        return browser, ctx, page
+    except Exception:
+        log.warning("  [Browser] Browser crashé — recréation complète...")
+        try:
+            browser.close()
+        except Exception:
+            pass
+
+        browser = pw.chromium.launch(
+            headless=not headed,
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--no-first-run",
+                "--disable-extensions",
+                "--lang=fr-FR",
+                "--disable-blink-features=AutomationControlled",
+            ],
+        )
+        ctx = browser.new_context(
+            locale="fr-FR",
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+        )
+        page = ctx.new_page()
+        log.info("  [Browser] ✓ Browser recréé avec succès")
+        return browser, ctx, page
+
+
 def scrape_google_maps(page: Page, name: str, city: str) -> dict:
     result = {
         "found": False, "rating": None, "review_count": 0,
@@ -1222,7 +1264,16 @@ def main():
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
             headless=not args.headed,
-            args=["--lang=fr-FR", "--disable-blink-features=AutomationControlled"],
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--no-first-run",
+                "--disable-extensions",
+                "--lang=fr-FR",
+                "--disable-blink-features=AutomationControlled",
+            ],
         ) if not args.skip_playwright else None
 
         ctx = browser.new_context(
@@ -1267,8 +1318,8 @@ def main():
                         if args.limit and total_processed >= args.limit:
                             break
 
-                        # Vérifier que la page est valide, sinon la recréer
-                        page = ensure_page_valid(page, ctx)
+                        # Vérifier que le browser et la page sont valides
+                        browser, ctx, page = ensure_browser_valid(pw, browser, ctx, page, args.headed)
 
                         siret  = company.get("siret", "")
                         name   = company.get("name", company.get("nom_entreprise", ""))
