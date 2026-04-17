@@ -73,8 +73,8 @@ DB_URL = os.getenv(
 PLAYWRIGHT_DELAY   = 15     # secondes entre chaque entreprise Playwright
 API_CONCURRENT     = 5      # requêtes parallèles vers l'API gouv (réduit pour éviter throttling)
 API_BATCH_SIZE     = 500    # entreprises par page
-WEBSITE_MAX_LINKS  = 4      # max liens "contact" à visiter par site
-PAGE_TIMEOUT       = 12000  # ms timeout Playwright
+WEBSITE_MAX_LINKS  = 2      # max liens "contact" à visiter par site
+PAGE_TIMEOUT       = 8000   # ms timeout Playwright
 API_RETRY_DELAY    = 2      # délai en secondes entre les tentatives API
 MAPS_NAME_MATCH_THRESHOLD = 0.65  # 65% similarity required for company name match
 
@@ -440,7 +440,7 @@ def scrape_google_maps(page: Page, name: str, city: str) -> dict:
                 "button[aria-label*='Tout accepter'], button[aria-label*='Accept all']",
                 timeout=3000,
             )
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(400)
         except Exception:
             pass
 
@@ -448,7 +448,7 @@ def scrape_google_maps(page: Page, name: str, city: str) -> dict:
         try:
             page.wait_for_selector(".hfpxzc", timeout=5000)
             page.click(".hfpxzc", timeout=3000)
-            page.wait_for_timeout(1500)
+            page.wait_for_timeout(600)
         except Exception:
             pass
 
@@ -602,12 +602,12 @@ def scrape_pages_jaunes(page: Page, name: str, city: str) -> dict:
             timeout=PAGE_TIMEOUT, wait_until="domcontentloaded",
         )
         try:
-            page.click("#didomi-notice-agree-button", timeout=2500)
-            page.wait_for_timeout(600)
+            page.click("#didomi-notice-agree-button", timeout=1500)
+            page.wait_for_timeout(200)
         except Exception:
             pass
         try:
-            page.wait_for_selector(".bi-content, .no-result", timeout=6000)
+            page.wait_for_selector(".bi-content, .no-result", timeout=3000)
         except Exception:
             pass
 
@@ -783,7 +783,7 @@ def scrape_website_deep(page: Page, website_url: str) -> dict:
 
         try:
             page.goto(link, timeout=PAGE_TIMEOUT, wait_until="domcontentloaded")
-            page.wait_for_timeout(500)
+            page.wait_for_timeout(200)
 
             body_text = page.inner_text("body")
             contacts  = extract_best_contacts(body_text, site_domain)
