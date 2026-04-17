@@ -1296,6 +1296,12 @@ def main():
                 if args.limit:
                     batch_size = min(batch_size, args.limit - total_processed)
 
+                # Vérifier la connexion DB avant de lire
+                conn = ensure_db_connected(conn)
+                if not conn:
+                    log.error("  ❌ Impossible de se connecter à la DB, arrêt.")
+                    break
+
                 # Lire depuis la DB
                 companies = fetch_pending_db(conn, batch_size, current_offset)
                 if not companies:
