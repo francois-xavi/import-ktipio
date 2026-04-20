@@ -1381,7 +1381,8 @@ def main():
         finally:
             if browser:
                 browser.close()
-            conn.close()
+            if conn:
+                conn.close()
 
     print("\n" + "═" * 65)
     print(f"  ✅ Terminé")
