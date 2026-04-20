@@ -1166,8 +1166,12 @@ def enrich_one(page: Page, company: dict, gouv_data: dict) -> EnrichResult:
     if maps.get("website") and not website:
         website = maps["website"]
 
-    # ── Pages Jaunes (si téléphone ou site manquant) ──────────────────────────
-    if not phone or not website:
+    # ── Pages Jaunes (skip si Maps a déjà trouvé téléphone ET note Google) ──────
+    maps_has_phone  = bool(maps.get("phone"))
+    maps_has_rating = bool(maps.get("rating"))
+    skip_pj = maps_has_phone and maps_has_rating
+
+    if not skip_pj and (not phone or not website):
         log.info(f"  → Pages Jaunes")
         pj = scrape_pages_jaunes(page, name, city)
         if pj.get("phone") and not phone:
@@ -1175,6 +1179,8 @@ def enrich_one(page: Page, company: dict, gouv_data: dict) -> EnrichResult:
             phone_source = "pages-jaunes"
         if pj.get("website") and not website:
             website = pj["website"]
+    elif skip_pj:
+        log.info(f"  → Pages Jaunes skipped (Maps: ☎ + ⭐)")
 
     # ── Scraping profond du site web ──────────────────────────────────────────
     if website:
