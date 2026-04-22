@@ -75,6 +75,7 @@ API_CONCURRENT     = 5      # requêtes parallèles vers l'API gouv (réduit pou
 API_BATCH_SIZE     = 500    # entreprises par page
 WEBSITE_MAX_LINKS  = 2      # max liens "contact" à visiter par site
 PAGE_TIMEOUT       = 8000   # ms timeout Playwright
+PJ_TIMEOUT         = 5000   # ms timeout spécifique Pages Jaunes (plus court)
 API_RETRY_DELAY    = 2      # délai en secondes entre les tentatives API
 MAPS_NAME_MATCH_THRESHOLD = 0.65  # 65% similarity required for company name match
 
@@ -402,6 +403,8 @@ def ensure_browser_valid(pw, browser, ctx, page, headed: bool = False):
                 "--disable-extensions",
                 "--lang=fr-FR",
                 "--disable-blink-features=AutomationControlled",
+                "--js-flags=--max-old-space-size=256",
+                "--renderer-process-limit=1",
             ],
         )
         ctx = browser.new_context(
@@ -599,15 +602,15 @@ def scrape_pages_jaunes(page: Page, name: str, city: str) -> dict:
         loc = urllib.parse.quote_plus(city)
         page.goto(
             f"https://www.pagesjaunes.fr/annuaire/chercherlp?quoiqui={q}&ou={loc}",
-            timeout=PAGE_TIMEOUT, wait_until="domcontentloaded",
+            timeout=PJ_TIMEOUT, wait_until="domcontentloaded",
         )
         try:
-            page.click("#didomi-notice-agree-button", timeout=1500)
-            page.wait_for_timeout(200)
+            page.click("#didomi-notice-agree-button", timeout=1000)
+            page.wait_for_timeout(100)
         except Exception:
             pass
         try:
-            page.wait_for_selector(".bi-content, .no-result", timeout=3000)
+            page.wait_for_selector(".bi-content, .no-result", timeout=2000)
         except Exception:
             pass
 
@@ -637,6 +640,10 @@ def scrape_pages_jaunes(page: Page, name: str, city: str) -> dict:
                 if href and "pagesjaunes" not in href:
                     result["website"] = href.rstrip("/")
                     break
+
+        # Sortie précoce si on a déjà les deux
+        if result["phone"] and result["website"]:
+            return result
 
         if result["phone"] or result["website"]:
             log.info(f"  [PJ] ✓ ☎ {result['phone'] or '—'} | 🌐 {result['website'] or '—'}")
@@ -1279,6 +1286,8 @@ def main():
                 "--disable-extensions",
                 "--lang=fr-FR",
                 "--disable-blink-features=AutomationControlled",
+                "--js-flags=--max-old-space-size=256",
+                "--renderer-process-limit=1",
             ],
         ) if not args.skip_playwright else None
 
