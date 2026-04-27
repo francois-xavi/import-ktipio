@@ -11,8 +11,12 @@ RUN playwright install --with-deps chromium
 COPY google_reviews_worker.py .
 COPY batch_enrich.py .
 COPY check_db_columns.py .
+COPY enrich_qualibat_rge_db.py .
+COPY enrich_qualibat_scraper.py .
 
-RUN printf '#!/bin/bash\nif [ -z "$NEON_DATABASE_URL" ]; then echo "ERROR: NEON_DATABASE_URL not set"; exit 1; fi\nexec python google_reviews_worker.py "$@"\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Entrypoint flexible : SCRIPT env var sélectionne le script à lancer
+# Par défaut : google_reviews_worker.py
+RUN printf '#!/bin/bash\nif [ -z "$NEON_DATABASE_URL" ]; then echo "ERROR: NEON_DATABASE_URL not set"; exit 1; fi\nSCRIPT="${SCRIPT:-google_reviews_worker.py}"\nexec python "$SCRIPT" "$@"\n' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 ENV PYTHONUNBUFFERED=1
 ENTRYPOINT ["/app/entrypoint.sh"]
