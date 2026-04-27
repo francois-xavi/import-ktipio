@@ -218,32 +218,21 @@ def ensure_browser_valid(pw, browser, ctx, page, headed: bool = False):
 
 # ─── SCRAPING QUALIBAT ────────────────────────────────────────────────────────
 
-def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> dict:
+def init_qualibat_page(page: Page) -> bool:
     """
-    Scrape l'annuaire Qualibat pour un SIRET.
+    Initialise la page Qualibat une seule fois :
+      1. Charge l'annuaire
+      2. Accepte les cookies
+      3. Sélectionne 'Professionnel'
+      4. Ouvre l'accordéon 'RECHERCHE DIRECTE'
 
-    Workflow exact (basé sur l'inspection de https://www.qualibat.com/annuaire-entreprises-qualifiees) :
-      1. Choisir "Vous êtes un Professionnel" (radio)
-      2. Ouvrir l'accordéon "RECHERCHE DIRECTE PAR SIRET..."
-      3. Saisir SIRET dans le champ RECHERCHE
-      4. Cliquer "RECHERCHER"
-      5. Résultats : cliquer "Voir la fiche →"
-      6. Page détail : extraire qualifications format "XXXX - description"
+    Retourne True si l'initialisation a réussi (champ recherche visible).
     """
-    result = {
-        "is_qualibat": False,
-        "nb_qualifications": 0,
-        "qualifications": "",
-        "place_name": "",
-        "address": "",
-    }
-
     try:
-        # 1. Charger l'annuaire
         page.goto(QUALIBAT_URL, timeout=PAGE_TIMEOUT, wait_until="domcontentloaded")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(800)
 
-        # 2. Accepter les cookies si présent (Tarteaucitron / Didomi)
+        # Cookies
         for cookie_sel in [
             "#tarteaucitronPersonalize2",
             "#tarteaucitronAllAllowed",
@@ -254,33 +243,26 @@ def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> d
             ".tarteaucitronAllow",
         ]:
             try:
-                page.click(cookie_sel, timeout=1500)
+                page.click(cookie_sel, timeout=1000)
+                page.wait_for_timeout(200)
+                break
+            except Exception:
+                continue
+
+        # Professionnel
+        for prof_sel in [
+            "input[type='radio'][value='professional']",
+            "label:has-text('Vous êtes un Professionnel')",
+            "label:has-text('Professionnel')",
+        ]:
+            try:
+                page.click(prof_sel, timeout=1500)
                 page.wait_for_timeout(400)
                 break
             except Exception:
                 continue
 
-        # 3. Choisir "Vous êtes un Professionnel" (radio button)
-        prof_clicked = False
-        for prof_sel in [
-            "input[type='radio'][value='professional']",
-            "label:has-text('Vous êtes un Professionnel')",
-            "label:has-text('Professionnel')",
-            "div:has-text('Vous êtes un Professionnel') input[type='radio']",
-        ]:
-            try:
-                page.click(prof_sel, timeout=2000)
-                prof_clicked = True
-                page.wait_for_timeout(800)
-                break
-            except Exception:
-                continue
-
-        if not prof_clicked:
-            log.debug("  [Qualibat] Bouton Professionnel non cliqué (peut-être déjà sélectionné)")
-
-        # 4. Ouvrir l'accordéon "RECHERCHE DIRECTE PAR SIRET..."
-        # L'accordéon a probablement un bouton ou un lien cliquable
+        # Accordéon
         for acc_sel in [
             "button:has-text('RECHERCHE DIRECTE')",
             "div:has-text('RECHERCHE DIRECTE PAR SIRET') >> nth=0",
@@ -291,60 +273,107 @@ def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> d
             try:
                 el = page.query_selector(acc_sel)
                 if el:
-                    el.click(timeout=2000)
-                    page.wait_for_timeout(600)
+                    el.click(timeout=1500)
+                    page.wait_for_timeout(400)
                     break
             except Exception:
                 continue
 
-        # 5. Trouver le champ "RECHERCHE" et saisir le SIRET
-        # Le champ est visible une fois l'accordéon ouvert
-        search_input = None
+        # Vérifier que le champ recherche est visible
         for sel in [
             "input[name*='search']",
             "input[name*='recherche']",
-            "input[name*='siret']",
-            "input[placeholder*='SIRET']",
-            "input[placeholder*='entreprise']",
-            "input[type='search']:visible",
-            "form input[type='text']:visible",
-            # Fallback : premier input texte visible dans le formulaire
             "input[type='text']:visible",
         ]:
             try:
-                els = page.query_selector_all(sel)
-                for el in els:
-                    if el.is_visible():
-                        search_input = el
-                        break
-                if search_input:
-                    break
+                el = page.query_selector(sel)
+                if el and el.is_visible():
+                    return True
             except Exception:
                 continue
 
+        return False
+
+    except Exception as e:
+        log.warning(f"  [Qualibat] Init échouée: {e}")
+        return False
+
+
+def find_search_input(page: Page):
+    """Trouve le champ de recherche visible."""
+    for sel in [
+        "input[name*='search']",
+        "input[name*='recherche']",
+        "input[name*='siret']",
+        "input[placeholder*='SIRET']",
+        "input[type='search']:visible",
+        "form input[type='text']:visible",
+    ]:
+        try:
+            els = page.query_selector_all(sel)
+            for el in els:
+                if el.is_visible():
+                    return el
+        except Exception:
+            continue
+    return None
+
+
+def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "",
+                    needs_init: bool = False) -> tuple[dict, bool]:
+    """
+    Scrape Qualibat pour un SIRET. Réutilise la page si déjà initialisée.
+
+    Args:
+        needs_init: True si c'est le premier appel (page pas encore initialisée)
+
+    Returns:
+        (result, page_still_valid) — result dict + flag indiquant si la page est encore utilisable
+    """
+    result = {
+        "is_qualibat": False,
+        "nb_qualifications": 0,
+        "qualifications": "",
+        "place_name": "",
+        "address": "",
+    }
+
+    try:
+        # Si on n'est pas sur la page d'accueil de l'annuaire, retour
+        current_url = page.url
+        if needs_init or "annuaire-entreprises-qualifiees" not in current_url:
+            if not init_qualibat_page(page):
+                log.warning(f"  [Qualibat] Init échouée")
+                return result, False
+
+        # 1. Trouver le champ recherche
+        search_input = find_search_input(page)
         if not search_input:
-            log.warning(f"  [Qualibat] Champ recherche introuvable")
-            return result
+            # Re-init si pas trouvé
+            if not init_qualibat_page(page):
+                return result, False
+            search_input = find_search_input(page)
+            if not search_input:
+                return result, False
 
+        # 2. Vider et saisir le SIRET
+        search_input.fill("")  # clear
         search_input.fill(siret)
-        page.wait_for_timeout(400)
+        page.wait_for_timeout(150)
 
-        # 6. Cliquer sur "RECHERCHER"
+        # 3. Soumettre (clic ou Enter)
         submitted = False
         for btn_sel in [
             "button:has-text('RECHERCHER')",
             "button:has-text('Rechercher')",
             "button[type='submit']:visible",
-            "input[type='submit']:visible",
-            "form button:visible",
         ]:
             try:
-                page.click(btn_sel, timeout=2500)
+                page.click(btn_sel, timeout=1500)
                 submitted = True
                 break
             except Exception:
                 continue
-
         if not submitted:
             try:
                 search_input.press("Enter")
@@ -353,80 +382,85 @@ def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> d
                 pass
 
         if not submitted:
-            log.warning(f"  [Qualibat] Impossible de soumettre la recherche")
-            return result
+            log.warning(f"  [Qualibat] Soumission impossible")
+            return result, False
 
-        # 7. Attendre les résultats
-        page.wait_for_timeout(2500)
-        try:
-            page.wait_for_load_state("networkidle", timeout=5000)
-        except Exception:
-            pass
-
-        # 8. Vérifier s'il y a des résultats : on cherche "X ARTISAN(S) CORRESPONDENT" ou similaire
+        # 4. Attendre les résultats — wait pour soit "ARTISAN" soit "Aucun"
+        # Polling rapide au lieu de networkidle (plus rapide)
         body_text = ""
-        try:
-            body_text = page.inner_text("body")
-        except Exception:
-            return result
+        for attempt in range(8):  # max 8 * 200ms = 1.6s
+            page.wait_for_timeout(200)
+            try:
+                body_text = page.inner_text("body")
+                if (re.search(r"\d+\s+ARTISAN", body_text, re.IGNORECASE) or
+                        re.search(r"aucun\s*(résultat|artisan|entreprise)", body_text, re.IGNORECASE)):
+                    break
+            except Exception:
+                continue
 
-        # Si on voit "Aucun" dans la zone résultats → 0 résultat
+        # 5. Aucun résultat → retour rapide
         if re.search(r"aucun\s*(résultat|artisan|entreprise)", body_text, re.IGNORECASE):
-            log.info(f"  [Qualibat] ✗ Aucun résultat pour {siret}")
-            return result
+            log.info(f"  [Qualibat] ✗ Aucun résultat")
+            # Retour à l'accueil pour la prochaine recherche
+            page.go_back(timeout=3000)
+            page.wait_for_timeout(300)
+            return result, True
 
-        # Chercher le pattern "X ARTISAN(S) CORRESPONDENT"
         match_count = re.search(r"(\d+)\s+ARTISAN", body_text, re.IGNORECASE)
         if match_count:
-            log.info(f"  [Qualibat] {match_count.group(1)} résultat(s) trouvé(s)")
+            n = match_count.group(1)
+            log.info(f"  [Qualibat] {n} résultat(s)")
 
-        # 9. Cliquer sur "Voir la fiche →" pour aller au détail
+        # 6. Cliquer sur "Voir la fiche →"
         clicked_fiche = False
         for fiche_sel in [
             "a:has-text('Voir la fiche')",
             "a:has-text('voir la fiche')",
             "a[href*='fiche']:visible",
-            "a[href*='entreprise']:visible",
         ]:
             try:
-                page.click(fiche_sel, timeout=2500)
+                page.click(fiche_sel, timeout=2000)
                 clicked_fiche = True
-                page.wait_for_timeout(2000)
-                try:
-                    page.wait_for_load_state("networkidle", timeout=5000)
-                except Exception:
-                    pass
+                page.wait_for_timeout(800)
                 break
             except Exception:
                 continue
 
         if not clicked_fiche:
-            log.info(f"  [Qualibat] Impossible d'ouvrir la fiche détail (peut-être 0 résultat)")
-            # On peut quand même essayer d'extraire les qualifications de la page de résultats
-            # mais en général il faut cliquer sur la fiche
-            return result
+            log.info(f"  [Qualibat] Pas de fiche cliquable")
+            page.go_back(timeout=3000)
+            page.wait_for_timeout(300)
+            return result, True
 
-        # 10. Sur la page détail : extraire le nom de l'entreprise (h1 ou h2)
+        # 7. Attendre que la fiche détail soit chargée (h1 visible)
+        for attempt in range(8):
+            page.wait_for_timeout(200)
+            try:
+                if page.query_selector("h1") or "QUALIFICATION" in page.inner_text("body"):
+                    break
+            except Exception:
+                continue
+
         try:
             full_text = page.inner_text("body")
         except Exception:
-            full_text = body_text
+            return result, False
 
-        for name_sel in ["h1", "h2", ".company-name", "[class*='entreprise-name']"]:
+        # 8. Extraire le nom (h1 ou h2)
+        for name_sel in ["h1", "h2"]:
             try:
                 el = page.query_selector(name_sel)
                 if el:
                     txt = el.inner_text().strip()
-                    # Filtrer les titres génériques
                     if txt and len(txt) > 3 and not any(
-                        k in txt.lower() for k in ["recherche", "annuaire", "trouver", "qualibat"]
+                        k in txt.lower() for k in ["recherche", "annuaire", "trouver"]
                     ):
                         result["place_name"] = txt
                         break
             except Exception:
                 continue
 
-        # 11. Extraire l'adresse (souvent juste après le nom)
+        # 9. Extraire l'adresse
         addr_match = re.search(
             r"(\d+\s+[A-Z][A-Za-zéèàâ\s\-]+?)\s*[-–]\s*(\d{5}\s+[A-Z][A-Za-zéèàâ\s\-]+)",
             full_text
@@ -434,60 +468,52 @@ def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> d
         if addr_match:
             result["address"] = f"{addr_match.group(1).strip()} - {addr_match.group(2).strip()}"
 
-        # 12. Extraire les qualifications
-        # Format observé sur la fiche détail :
-        #   2112 - Maçonnerie et ouvrage en béton armé (Technicité confirmée)
-        #   2142 - Réparation en maçonnerie et en béton armé ()
+        # 10. Extraire les qualifications
         qualifications_found = []
-
-        # Pattern principal : 4 chiffres - description (avec parenthèses optionnelles)
-        # Plus strict : doit commencer en début de ligne ou après une nouvelle ligne
         qual_pattern = re.compile(
             r"(?:^|\n)\s*(\d{4})\s*[-–]\s*([^\n]{5,200})",
             re.MULTILINE
         )
-
         for match in qual_pattern.finditer(full_text):
             code = match.group(1)
-            label = match.group(2).strip()
-            # Nettoyer les parenthèses vides à la fin
-            label = re.sub(r"\s*\(\s*\)\s*$", "", label)
-            # Filtrer les codes hors plage Qualibat (1000-9999)
+            label = re.sub(r"\s*\(\s*\)\s*$", "", match.group(2).strip())
             if 1000 <= int(code) <= 9999:
-                qualif_str = f"{code} - {label}"
-                if qualif_str not in qualifications_found:
-                    qualifications_found.append(qualif_str)
+                q = f"{code} - {label}"
+                if q not in qualifications_found:
+                    qualifications_found.append(q)
 
-        # Vérifier aussi le compteur "X QUALIFICATION(S)"
         match_qual_count = re.search(r"(\d+)\s+QUALIFICATION", full_text, re.IGNORECASE)
         expected_count = int(match_qual_count.group(1)) if match_qual_count else 0
 
-        # 13. Résultat final
         if qualifications_found:
             result["is_qualibat"] = True
             result["nb_qualifications"] = len(qualifications_found)
             result["qualifications"] = "; ".join(qualifications_found[:30])
             log.info(f"  [Qualibat] ✓ {result['nb_qualifications']} qualif(s) "
-                     f"(attendu: {expected_count}) : "
-                     f"{result['qualifications'][:150]}{'...' if len(result['qualifications']) > 150 else ''}")
+                     f"(attendu: {expected_count})")
         elif expected_count > 0:
-            # Le compteur indique des qualifs mais on n'a pas réussi à les parser
-            log.warning(f"  [Qualibat] ⚠ {expected_count} qualif(s) annoncée(s) "
-                        f"mais aucune extraite (sélecteur à corriger ?)")
-            # Marquer is_qualibat = true quand même puisque le compteur le dit
+            log.warning(f"  [Qualibat] ⚠ {expected_count} qualifs annoncées mais 0 extraites")
             result["is_qualibat"] = True
             result["nb_qualifications"] = expected_count
             result["qualifications"] = f"({expected_count} qualifications non parsées)"
         else:
-            log.info(f"  [Qualibat] ✗ Pas de qualifications détectées")
+            log.info(f"  [Qualibat] ✗ Pas de qualifs détectées sur la fiche")
+
+        # Retour à la page d'annuaire pour la prochaine recherche
+        page.go_back(timeout=3000)
+        page.wait_for_timeout(300)
+        page.go_back(timeout=3000)  # 2x : results page → search page
+        page.wait_for_timeout(300)
+
+        return result, True
 
     except Exception as e:
         if "closed" in str(e).lower():
-            log.warning(f"  [Qualibat] Page fermée (sera recréée)")
+            log.warning(f"  [Qualibat] Page fermée")
+            return result, False
         else:
             log.warning(f"  [Qualibat] Erreur: {e}")
-
-    return result
+            return result, True
 
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
@@ -558,6 +584,8 @@ def main():
         )
         page = ctx.new_page()
 
+        page_initialized = False
+
         try:
             # Mode SIRET unique (test)
             if args.siret:
@@ -568,9 +596,12 @@ def main():
                     sys.exit(1)
 
                 log.info(f"\n  [TEST] {company.get('raison_sociale')} — {company.get('ville')}")
-                result = scrape_qualibat(page, args.siret,
-                                         company.get("raison_sociale", ""),
-                                         company.get("ville", ""))
+                result, page_ok = scrape_qualibat(
+                    page, args.siret,
+                    company.get("raison_sociale", ""),
+                    company.get("ville", ""),
+                    needs_init=True,
+                )
 
                 log.info(f"\n  📊 RÉSULTAT FINAL :")
                 log.info(f"     is_qualibat       : {result['is_qualibat']}")
@@ -579,11 +610,7 @@ def main():
                 log.info(f"     place_name        : {result['place_name']}")
                 log.info(f"     address           : {result['address']}")
 
-                if not args.dry_run:
-                    update_qualibat_db(conn, args.siret, result, dry_run=False)
-                else:
-                    update_qualibat_db(conn, args.siret, result, dry_run=True)
-
+                update_qualibat_db(conn, args.siret, result, dry_run=args.dry_run)
                 return
 
             # Mode batch
@@ -623,7 +650,15 @@ def main():
 
                     log.info(f"\n  [{total_processed + 1}/{total_pending:,}] {name} — {city} ({siret})")
 
-                    result = scrape_qualibat(page, siret, name, city)
+                    # Init au 1er appel ou si la page a été perdue
+                    needs_init = not page_initialized
+                    result, page_ok = scrape_qualibat(page, siret, name, city, needs_init=needs_init)
+
+                    if page_ok:
+                        page_initialized = True
+                    else:
+                        # Page invalide → forcer ré-init au prochain tour
+                        page_initialized = False
 
                     conn = ensure_db_connected(conn)
                     if not conn:
@@ -635,8 +670,7 @@ def main():
                         if result["is_qualibat"]:
                             total_qualibat_found += 1
 
-                    if i < len(companies) - 1:
-                        log.info(f"  ⏳ {args.delay}s…")
+                    if i < len(companies) - 1 and args.delay > 0:
                         time.sleep(args.delay)
 
                 if len(companies) < batch_size:
