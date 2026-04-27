@@ -221,7 +221,14 @@ def ensure_browser_valid(pw, browser, ctx, page, headed: bool = False):
 def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> dict:
     """
     Scrape l'annuaire Qualibat pour un SIRET.
-    Retourne {is_qualibat, nb_qualifications, qualifications, place_name, address}.
+
+    Workflow exact (basé sur l'inspection de https://www.qualibat.com/annuaire-entreprises-qualifiees) :
+      1. Choisir "Vous êtes un Professionnel" (radio)
+      2. Ouvrir l'accordéon "RECHERCHE DIRECTE PAR SIRET..."
+      3. Saisir SIRET dans le champ RECHERCHE
+      4. Cliquer "RECHERCHER"
+      5. Résultats : cliquer "Voir la fiche →"
+      6. Page détail : extraire qualifications format "XXXX - description"
     """
     result = {
         "is_qualibat": False,
@@ -234,50 +241,83 @@ def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> d
     try:
         # 1. Charger l'annuaire
         page.goto(QUALIBAT_URL, timeout=PAGE_TIMEOUT, wait_until="domcontentloaded")
-        page.wait_for_timeout(800)
+        page.wait_for_timeout(1000)
 
-        # 2. Accepter les cookies si présent
+        # 2. Accepter les cookies si présent (Tarteaucitron / Didomi)
         for cookie_sel in [
+            "#tarteaucitronPersonalize2",
+            "#tarteaucitronAllAllowed",
             "#didomi-notice-agree-button",
+            "button:has-text('Tout accepter')",
             "button:has-text('J\\'accepte')",
             "button:has-text('Accepter')",
-            "[id*='accept'][id*='cookie']",
+            ".tarteaucitronAllow",
         ]:
             try:
                 page.click(cookie_sel, timeout=1500)
-                page.wait_for_timeout(300)
+                page.wait_for_timeout(400)
                 break
             except Exception:
                 continue
 
-        # 3. Choisir "Professionnel" si une popup s'affiche
+        # 3. Choisir "Vous êtes un Professionnel" (radio button)
+        prof_clicked = False
         for prof_sel in [
-            "input[value='professional']",
+            "input[type='radio'][value='professional']",
+            "label:has-text('Vous êtes un Professionnel')",
             "label:has-text('Professionnel')",
-            "button:has-text('Professionnel')",
+            "div:has-text('Vous êtes un Professionnel') input[type='radio']",
         ]:
             try:
-                page.click(prof_sel, timeout=1500)
-                page.wait_for_timeout(500)
+                page.click(prof_sel, timeout=2000)
+                prof_clicked = True
+                page.wait_for_timeout(800)
                 break
             except Exception:
                 continue
 
-        # 4. Trouver le champ "recherche" et saisir le SIRET
+        if not prof_clicked:
+            log.debug("  [Qualibat] Bouton Professionnel non cliqué (peut-être déjà sélectionné)")
+
+        # 4. Ouvrir l'accordéon "RECHERCHE DIRECTE PAR SIRET..."
+        # L'accordéon a probablement un bouton ou un lien cliquable
+        for acc_sel in [
+            "button:has-text('RECHERCHE DIRECTE')",
+            "div:has-text('RECHERCHE DIRECTE PAR SIRET') >> nth=0",
+            "[class*='accordion']:has-text('RECHERCHE DIRECTE')",
+            "h2:has-text('RECHERCHE DIRECTE')",
+            "h3:has-text('RECHERCHE DIRECTE')",
+        ]:
+            try:
+                el = page.query_selector(acc_sel)
+                if el:
+                    el.click(timeout=2000)
+                    page.wait_for_timeout(600)
+                    break
+            except Exception:
+                continue
+
+        # 5. Trouver le champ "RECHERCHE" et saisir le SIRET
+        # Le champ est visible une fois l'accordéon ouvert
         search_input = None
         for sel in [
             "input[name*='search']",
             "input[name*='recherche']",
+            "input[name*='siret']",
             "input[placeholder*='SIRET']",
             "input[placeholder*='entreprise']",
-            "input[type='search']",
-            "input.search-input",
+            "input[type='search']:visible",
             "form input[type='text']:visible",
+            # Fallback : premier input texte visible dans le formulaire
+            "input[type='text']:visible",
         ]:
             try:
-                el = page.query_selector(sel)
-                if el and el.is_visible():
-                    search_input = sel
+                els = page.query_selector_all(sel)
+                for el in els:
+                    if el.is_visible():
+                        search_input = el
+                        break
+                if search_input:
                     break
             except Exception:
                 continue
@@ -286,138 +326,160 @@ def scrape_qualibat(page: Page, siret: str, name: str = "", city: str = "") -> d
             log.warning(f"  [Qualibat] Champ recherche introuvable")
             return result
 
-        page.fill(search_input, siret)
+        search_input.fill(siret)
         page.wait_for_timeout(400)
 
-        # 5. Soumettre le formulaire
+        # 6. Cliquer sur "RECHERCHER"
         submitted = False
         for btn_sel in [
+            "button:has-text('RECHERCHER')",
             "button:has-text('Rechercher')",
-            "button[type='submit']",
-            "input[type='submit']",
+            "button[type='submit']:visible",
+            "input[type='submit']:visible",
             "form button:visible",
         ]:
             try:
-                page.click(btn_sel, timeout=2000)
+                page.click(btn_sel, timeout=2500)
                 submitted = True
                 break
             except Exception:
                 continue
 
         if not submitted:
-            # Fallback : appuyer sur Entrée
             try:
-                page.press(search_input, "Enter")
+                search_input.press("Enter")
                 submitted = True
             except Exception:
                 pass
 
         if not submitted:
-            log.warning(f"  [Qualibat] Impossible de soumettre")
+            log.warning(f"  [Qualibat] Impossible de soumettre la recherche")
             return result
 
-        # 6. Attendre les résultats (page de résultats)
+        # 7. Attendre les résultats
         page.wait_for_timeout(2500)
         try:
             page.wait_for_load_state("networkidle", timeout=5000)
         except Exception:
             pass
 
-        # 7. Vérifier s'il y a des résultats
-        no_result_indicators = [
-            "Aucun résultat",
-            "aucune entreprise",
-            "pas d'entreprise",
-            "no result",
-        ]
+        # 8. Vérifier s'il y a des résultats : on cherche "X ARTISAN(S) CORRESPONDENT" ou similaire
         body_text = ""
         try:
-            body_text = page.inner_text("body").lower()
+            body_text = page.inner_text("body")
         except Exception:
-            pass
+            return result
 
-        if any(ind.lower() in body_text for ind in no_result_indicators):
+        # Si on voit "Aucun" dans la zone résultats → 0 résultat
+        if re.search(r"aucun\s*(résultat|artisan|entreprise)", body_text, re.IGNORECASE):
             log.info(f"  [Qualibat] ✗ Aucun résultat pour {siret}")
             return result
 
-        # 8. Extraire le nom de l'entreprise (premier résultat)
-        for name_sel in [
-            "h1",
-            "h2.company-name",
-            ".result-item h2",
-            ".entreprise-name",
-            "[class*='entreprise'] h2",
-            "[class*='company'] h2",
+        # Chercher le pattern "X ARTISAN(S) CORRESPONDENT"
+        match_count = re.search(r"(\d+)\s+ARTISAN", body_text, re.IGNORECASE)
+        if match_count:
+            log.info(f"  [Qualibat] {match_count.group(1)} résultat(s) trouvé(s)")
+
+        # 9. Cliquer sur "Voir la fiche →" pour aller au détail
+        clicked_fiche = False
+        for fiche_sel in [
+            "a:has-text('Voir la fiche')",
+            "a:has-text('voir la fiche')",
+            "a[href*='fiche']:visible",
+            "a[href*='entreprise']:visible",
         ]:
+            try:
+                page.click(fiche_sel, timeout=2500)
+                clicked_fiche = True
+                page.wait_for_timeout(2000)
+                try:
+                    page.wait_for_load_state("networkidle", timeout=5000)
+                except Exception:
+                    pass
+                break
+            except Exception:
+                continue
+
+        if not clicked_fiche:
+            log.info(f"  [Qualibat] Impossible d'ouvrir la fiche détail (peut-être 0 résultat)")
+            # On peut quand même essayer d'extraire les qualifications de la page de résultats
+            # mais en général il faut cliquer sur la fiche
+            return result
+
+        # 10. Sur la page détail : extraire le nom de l'entreprise (h1 ou h2)
+        try:
+            full_text = page.inner_text("body")
+        except Exception:
+            full_text = body_text
+
+        for name_sel in ["h1", "h2", ".company-name", "[class*='entreprise-name']"]:
             try:
                 el = page.query_selector(name_sel)
                 if el:
                     txt = el.inner_text().strip()
-                    if txt and len(txt) > 2:
+                    # Filtrer les titres génériques
+                    if txt and len(txt) > 3 and not any(
+                        k in txt.lower() for k in ["recherche", "annuaire", "trouver", "qualibat"]
+                    ):
                         result["place_name"] = txt
                         break
             except Exception:
                 continue
 
-        # 9. Extraire l'adresse
-        for addr_sel in [
-            ".address",
-            ".adresse",
-            "[class*='address']",
-            "[class*='adresse']",
-        ]:
-            try:
-                el = page.query_selector(addr_sel)
-                if el:
-                    result["address"] = el.inner_text().strip()
-                    break
-            except Exception:
-                continue
+        # 11. Extraire l'adresse (souvent juste après le nom)
+        addr_match = re.search(
+            r"(\d+\s+[A-Z][A-Za-zéèàâ\s\-]+?)\s*[-–]\s*(\d{5}\s+[A-Z][A-Za-zéèàâ\s\-]+)",
+            full_text
+        )
+        if addr_match:
+            result["address"] = f"{addr_match.group(1).strip()} - {addr_match.group(2).strip()}"
 
-        # 10. Extraire la liste des qualifications
-        # Approche 1 : chercher des éléments avec des codes Qualibat (4 chiffres + lettre, ex: "1311 BTP")
-        qualifications_found = set()
+        # 12. Extraire les qualifications
+        # Format observé sur la fiche détail :
+        #   2112 - Maçonnerie et ouvrage en béton armé (Technicité confirmée)
+        #   2142 - Réparation en maçonnerie et en béton armé ()
+        qualifications_found = []
 
-        # Scanner tout le texte de la page pour des codes Qualibat
-        qualibat_code_pattern = re.compile(r"\b(\d{4})\s*[-–]?\s*([A-Z][A-Za-zéèà\s\-,/'.]{5,80})", re.MULTILINE)
-        try:
-            full_text = page.inner_text("body")
-            for match in qualibat_code_pattern.finditer(full_text):
-                code = match.group(1)
-                label = match.group(2).strip()
-                if 1000 <= int(code) <= 9999 and len(label) > 5:
-                    qualifications_found.add(f"{code} {label}")
-        except Exception:
-            pass
+        # Pattern principal : 4 chiffres - description (avec parenthèses optionnelles)
+        # Plus strict : doit commencer en début de ligne ou après une nouvelle ligne
+        qual_pattern = re.compile(
+            r"(?:^|\n)\s*(\d{4})\s*[-–]\s*([^\n]{5,200})",
+            re.MULTILINE
+        )
 
-        # Approche 2 : sélecteurs spécifiques aux qualifications
-        for qual_sel in [
-            ".qualification-item",
-            ".qualifications li",
-            "[class*='qualification'] li",
-            ".certification-item",
-            ".qualification",
-        ]:
-            try:
-                els = page.query_selector_all(qual_sel)
-                for el in els:
-                    txt = el.inner_text().strip()
-                    if txt and 5 < len(txt) < 200:
-                        qualifications_found.add(txt)
-            except Exception:
-                continue
+        for match in qual_pattern.finditer(full_text):
+            code = match.group(1)
+            label = match.group(2).strip()
+            # Nettoyer les parenthèses vides à la fin
+            label = re.sub(r"\s*\(\s*\)\s*$", "", label)
+            # Filtrer les codes hors plage Qualibat (1000-9999)
+            if 1000 <= int(code) <= 9999:
+                qualif_str = f"{code} - {label}"
+                if qualif_str not in qualifications_found:
+                    qualifications_found.append(qualif_str)
 
-        # 11. Déterminer le résultat final
+        # Vérifier aussi le compteur "X QUALIFICATION(S)"
+        match_qual_count = re.search(r"(\d+)\s+QUALIFICATION", full_text, re.IGNORECASE)
+        expected_count = int(match_qual_count.group(1)) if match_qual_count else 0
+
+        # 13. Résultat final
         if qualifications_found:
             result["is_qualibat"] = True
             result["nb_qualifications"] = len(qualifications_found)
-            result["qualifications"] = "; ".join(sorted(qualifications_found)[:30])  # max 30
-            log.info(f"  [Qualibat] ✓ {result['nb_qualifications']} qualifs : "
-                     f"{result['qualifications'][:120]}...")
+            result["qualifications"] = "; ".join(qualifications_found[:30])
+            log.info(f"  [Qualibat] ✓ {result['nb_qualifications']} qualif(s) "
+                     f"(attendu: {expected_count}) : "
+                     f"{result['qualifications'][:150]}{'...' if len(result['qualifications']) > 150 else ''}")
+        elif expected_count > 0:
+            # Le compteur indique des qualifs mais on n'a pas réussi à les parser
+            log.warning(f"  [Qualibat] ⚠ {expected_count} qualif(s) annoncée(s) "
+                        f"mais aucune extraite (sélecteur à corriger ?)")
+            # Marquer is_qualibat = true quand même puisque le compteur le dit
+            result["is_qualibat"] = True
+            result["nb_qualifications"] = expected_count
+            result["qualifications"] = f"({expected_count} qualifications non parsées)"
         else:
-            # Page chargée mais pas de qualifications détectables
-            # → soit pas dans Qualibat, soit sélecteurs inadaptés
-            log.info(f"  [Qualibat] ✗ Pas de qualifications détectées (page chargée)")
+            log.info(f"  [Qualibat] ✗ Pas de qualifications détectées")
 
     except Exception as e:
         if "closed" in str(e).lower():
