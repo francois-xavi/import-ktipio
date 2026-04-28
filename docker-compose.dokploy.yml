@@ -1,0 +1,135 @@
+# Docker Compose pour déploiement Dokploy
+# 5 workers Qualibat en parallèle, partageant la même DB Neon
+#
+# Variables d'environnement à configurer dans l'UI Dokploy :
+#   NEON_DATABASE_URL : URL de connexion Neon PostgreSQL (obligatoire)
+#
+# Chaque worker traite sa propre tranche d'offsets pour ne pas se chevaucher
+# (859,242 entreprises BTP / 5 workers ≈ 172,000 par worker)
+
+services:
+
+  # ─── Worker 1 : offset 0 → 172,000 ─────────────────────────────────────────
+  qualibat-w1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/qualibat:latest
+    container_name: qualibat-worker-1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: enrich_qualibat_scraper.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "0", "--batch-size", "50", "--delay", "1"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1'
+    networks:
+      - qualibat-net
+
+  # ─── Worker 2 : offset 172,000 → 344,000 ───────────────────────────────────
+  qualibat-w2:
+    image: ktipio/qualibat:latest
+    container_name: qualibat-worker-2
+    depends_on:
+      - qualibat-w1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: enrich_qualibat_scraper.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "172000", "--batch-size", "50", "--delay", "1"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1'
+    networks:
+      - qualibat-net
+
+  # ─── Worker 3 : offset 344,000 → 516,000 ───────────────────────────────────
+  qualibat-w3:
+    image: ktipio/qualibat:latest
+    container_name: qualibat-worker-3
+    depends_on:
+      - qualibat-w1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: enrich_qualibat_scraper.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "344000", "--batch-size", "50", "--delay", "1"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1'
+    networks:
+      - qualibat-net
+
+  # ─── Worker 4 : offset 516,000 → 688,000 ───────────────────────────────────
+  qualibat-w4:
+    image: ktipio/qualibat:latest
+    container_name: qualibat-worker-4
+    depends_on:
+      - qualibat-w1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: enrich_qualibat_scraper.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "516000", "--batch-size", "50", "--delay", "1"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1'
+    networks:
+      - qualibat-net
+
+  # ─── Worker 5 : offset 688,000 → fin ───────────────────────────────────────
+  qualibat-w5:
+    image: ktipio/qualibat:latest
+    container_name: qualibat-worker-5
+    depends_on:
+      - qualibat-w1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: enrich_qualibat_scraper.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "688000", "--batch-size", "50", "--delay", "1"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '1'
+    networks:
+      - qualibat-net
+
+networks:
+  qualibat-net:
+    driver: bridge
