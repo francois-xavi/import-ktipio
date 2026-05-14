@@ -29,8 +29,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
-          cpus: '1'
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
     networks:
       - qualibat-net
 
@@ -53,8 +56,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
-          cpus: '1'
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
     networks:
       - qualibat-net
 
@@ -77,8 +83,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
-          cpus: '1'
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
     networks:
       - qualibat-net
 
@@ -101,8 +110,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
-          cpus: '1'
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
     networks:
       - qualibat-net
 
@@ -125,8 +137,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1.5G
-          cpus: '1'
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
     networks:
       - qualibat-net
 
