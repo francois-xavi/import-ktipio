@@ -1,0 +1,220 @@
+# Docker Compose Dokploy — 10 workers Google Reviews (VPS 2 - aureza)
+#
+# Cible : VPS 2 avec ~7.56 GB RAM, 4 CPU cores
+# Couvre les offsets 0 → 387 000 (première moitié de la DB)
+#
+# Variable env requise :
+#   NEON_DATABASE_URL : URL Neon PostgreSQL
+
+services:
+
+  gr-w1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/gr:latest
+    container_name: gr-worker-1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "0", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 600M
+          cpus: '0.4'
+        reservations:
+          memory: 300M
+          cpus: '0.2'
+    networks:
+      - gr-net
+
+  gr-w2:
+    image: ktipio/gr:latest
+    container_name: gr-worker-2
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "43000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w3:
+    image: ktipio/gr:latest
+    container_name: gr-worker-3
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "86000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w4:
+    image: ktipio/gr:latest
+    container_name: gr-worker-4
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "129000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w5:
+    image: ktipio/gr:latest
+    container_name: gr-worker-5
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "172000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w6:
+    image: ktipio/gr:latest
+    container_name: gr-worker-6
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "215000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w7:
+    image: ktipio/gr:latest
+    container_name: gr-worker-7
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "258000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w8:
+    image: ktipio/gr:latest
+    container_name: gr-worker-8
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "301000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w9:
+    image: ktipio/gr:latest
+    container_name: gr-worker-9
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "344000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+  gr-w10:
+    image: ktipio/gr:latest
+    container_name: gr-worker-10
+    depends_on: [gr-w1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "387000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-net]
+
+networks:
+  gr-net:
+    driver: bridge
