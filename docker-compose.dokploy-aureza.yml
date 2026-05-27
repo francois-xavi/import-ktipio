@@ -1,0 +1,186 @@
+# Docker Compose Dokploy — 10 workers Google Reviews (VPS aureza)
+#
+# Cible : VPS aureza avec ~7.56 GB RAM, 4 CPU cores
+# Couvre les offsets 330 000 → 627 000 (tranche du milieu)
+#
+# Variable env requise :
+#   NEON_DATABASE_URL : URL Neon PostgreSQL
+
+services:
+
+  gr-aureza-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "330000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-2:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-2
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "363000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-3:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-3
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "396000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-4:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-4
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "429000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-5:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-5
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "462000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-6:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-6
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "495000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-7:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-7
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "528000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-8:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-8
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "561000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-9:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-9
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "594000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+  gr-aureza-10:
+    image: ktipio/gr-aureza:latest
+    container_name: gr-aureza-10
+    depends_on: [gr-aureza-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "627000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-aureza-net]
+
+networks:
+  gr-aureza-net:
+    driver: bridge

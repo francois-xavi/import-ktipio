@@ -1,0 +1,125 @@
+# Docker Compose Dokploy — 6 workers Google Reviews (VPS ubuntu)
+#
+# Cible : VPS ubuntu avec ~7.76 GB RAM, 4 CPU cores
+# CE VPS A DÉJÀ 5 WORKERS QUALIBAT — ce déploiement les complète.
+# Couvre les offsets 660 000 → 825 000 (dernière tranche)
+#
+# RAM réduite à 500M par worker car partage avec Qualibat :
+#   5 Qualibat × 700M  = 3.5 GB
+#   6 GR     × 500M    = 3.0 GB
+#   Dokploy + OS       = 1.0 GB
+#   TOTAL              = 7.5 GB (sur 7.76 GB)
+#
+# Variable env requise :
+#   NEON_DATABASE_URL : URL Neon PostgreSQL
+
+services:
+
+  gr-ubuntu-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/gr-ubuntu:latest
+    container_name: gr-ubuntu-1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "660000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 500M, cpus: '0.35' }
+        reservations: { memory: 250M, cpus: '0.2' }
+    networks: [gr-ubuntu-net]
+
+  gr-ubuntu-2:
+    image: ktipio/gr-ubuntu:latest
+    container_name: gr-ubuntu-2
+    depends_on: [gr-ubuntu-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "693000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 500M, cpus: '0.35' }
+    networks: [gr-ubuntu-net]
+
+  gr-ubuntu-3:
+    image: ktipio/gr-ubuntu:latest
+    container_name: gr-ubuntu-3
+    depends_on: [gr-ubuntu-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "726000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 500M, cpus: '0.35' }
+    networks: [gr-ubuntu-net]
+
+  gr-ubuntu-4:
+    image: ktipio/gr-ubuntu:latest
+    container_name: gr-ubuntu-4
+    depends_on: [gr-ubuntu-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "759000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 500M, cpus: '0.35' }
+    networks: [gr-ubuntu-net]
+
+  gr-ubuntu-5:
+    image: ktipio/gr-ubuntu:latest
+    container_name: gr-ubuntu-5
+    depends_on: [gr-ubuntu-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "792000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 500M, cpus: '0.35' }
+    networks: [gr-ubuntu-net]
+
+  gr-ubuntu-6:
+    image: ktipio/gr-ubuntu:latest
+    container_name: gr-ubuntu-6
+    depends_on: [gr-ubuntu-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "825000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 500M, cpus: '0.35' }
+    networks: [gr-ubuntu-net]
+
+networks:
+  gr-ubuntu-net:
+    driver: bridge
