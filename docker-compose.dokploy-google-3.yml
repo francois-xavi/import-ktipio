@@ -1,0 +1,97 @@
+# Docker Compose Dokploy — 3 workers Google Reviews (VPS 1)
+#
+# À déployer sur le Dokploy du VPS 1 (146.59.235.129)
+# en COMPLÉMENT des 5 workers Qualibat déjà en place.
+#
+# Reprend les offsets des workers 1, 2, 3 du déploiement nohup initial.
+#
+# Variable env requise :
+#   NEON_DATABASE_URL : URL Neon PostgreSQL
+
+services:
+
+  # ─── GR-1 : reprend worker 1 (offset ~9660) ───────────────────────────────
+  gr-w1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/gr:latest
+    container_name: gr-worker-1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "9660", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-2 : reprend worker 2 (offset ~101300) ─────────────────────────────
+  gr-w2:
+    image: ktipio/gr:latest
+    container_name: gr-worker-2
+    depends_on:
+      - gr-w1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "101300", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-3 : reprend worker 3 (offset ~199150) ─────────────────────────────
+  gr-w3:
+    image: ktipio/gr:latest
+    container_name: gr-worker-3
+    depends_on:
+      - gr-w1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "199150", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+networks:
+  gr-net:
+    driver: bridge

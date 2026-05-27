@@ -1,0 +1,176 @@
+# Docker Compose Dokploy — 6 workers Google Reviews (VPS 3 / nouveau Dokploy)
+#
+# À déployer sur le Dokploy du VPS 3 (le nouveau).
+# Reprend les offsets des workers 4, 5, 6, 7, 8, 9 du déploiement nohup initial.
+#
+# Variable env requise :
+#   NEON_DATABASE_URL : URL Neon PostgreSQL
+
+services:
+
+  # ─── GR-4 : reprend worker 4 (offset ~296750) ─────────────────────────────
+  gr-w4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/gr:latest
+    container_name: gr-worker-4
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "296750", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-5 : reprend worker 5 (offset ~394100) ─────────────────────────────
+  gr-w5:
+    image: ktipio/gr:latest
+    container_name: gr-worker-5
+    depends_on:
+      - gr-w4
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "394100", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-6 : reprend worker 6 (offset ~494100) ─────────────────────────────
+  gr-w6:
+    image: ktipio/gr:latest
+    container_name: gr-worker-6
+    depends_on:
+      - gr-w4
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "494100", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-7 : reprend worker 7 (offset ~589900) ─────────────────────────────
+  gr-w7:
+    image: ktipio/gr:latest
+    container_name: gr-worker-7
+    depends_on:
+      - gr-w4
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "589900", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-8 : reprend worker 8 (offset ~693050) ─────────────────────────────
+  gr-w8:
+    image: ktipio/gr:latest
+    container_name: gr-worker-8
+    depends_on:
+      - gr-w4
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "693050", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+  # ─── GR-9 : reprend worker 9 (offset ~787100) ─────────────────────────────
+  gr-w9:
+    image: ktipio/gr:latest
+    container_name: gr-worker-9
+    depends_on:
+      - gr-w4
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "787100", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    volumes:
+      - ../files/logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+          cpus: '0.5'
+        reservations:
+          memory: 400M
+          cpus: '0.25'
+    networks:
+      - gr-net
+
+networks:
+  gr-net:
+    driver: bridge
