@@ -1053,6 +1053,7 @@ def upsert_result(conn, result: EnrichResult, dry_run: bool = False) -> bool:
             return False
 
         with conn.cursor() as cur:
+            # 1. Écrire dans google_reviews (table dédiée scraping)
             cur.execute("""
                 INSERT INTO google_reviews (
                     siret, found, rating, review_count, rating_text,
@@ -1099,6 +1100,28 @@ def upsert_result(conn, result: EnrichResult, dry_run: bool = False) -> bool:
                 "email_source": result.email_source,
                 "scraped_at":   result.scraped_at,
             })
+
+            # 2. Mettre à jour companies pour le tracking et l'affichage frontend
+            # On utilise COALESCE pour ne pas écraser les valeurs existantes avec NULL/vide
+            cur.execute("""
+                UPDATE companies SET
+                    google_rating           = COALESCE(%(rating)s, google_rating),
+                    google_review_count     = COALESCE(%(review_count)s, google_review_count),
+                    telephone               = COALESCE(NULLIF(%(phone)s, ''), telephone),
+                    email                   = COALESCE(NULLIF(%(email)s, ''), email),
+                    site_web                = COALESCE(NULLIF(%(website)s, ''), site_web),
+                    reviews_enriched_status = 'done',
+                    reviews_enriched_at     = NOW()
+                WHERE siret = %(siret)s;
+            """, {
+                "siret":        result.siret,
+                "rating":       result.rating,
+                "review_count": result.review_count,
+                "phone":        result.phone or "",
+                "email":        result.email or "",
+                "website":      result.website or "",
+            })
+
         conn.commit()
         return True
     except Exception as e:

@@ -14,6 +14,7 @@ COPY check_db_columns.py .
 COPY enrich_qualibat_rge_db.py .
 COPY enrich_qualibat_scraper.py .
 COPY stats.py .
+COPY sync_companies_from_google_reviews.py .
 
 # Entrypoint flexible : SCRIPT env var sélectionne le script à lancer
 # Par défaut : google_reviews_worker.py
