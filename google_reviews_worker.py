@@ -74,8 +74,10 @@ PLAYWRIGHT_DELAY   = 15     # secondes entre chaque entreprise Playwright
 API_CONCURRENT     = 5      # requêtes parallèles vers l'API gouv (réduit pour éviter throttling)
 API_BATCH_SIZE     = 500    # entreprises par page
 WEBSITE_MAX_LINKS  = 2      # max liens "contact" à visiter par site
-PAGE_TIMEOUT       = 8000   # ms timeout Playwright
+PAGE_TIMEOUT       = 8000   # ms timeout Playwright (Maps)
+WEB_TIMEOUT        = 6000   # ms timeout navigation site web profond (plus court)
 PJ_TIMEOUT         = 5000   # ms timeout spécifique Pages Jaunes (plus court)
+FALLBACK_MAX_PATHS = 4      # max d'URLs fixes /contact testées en fallback
 API_RETRY_DELAY    = 2      # délai en secondes entre les tentatives API
 MAPS_NAME_MATCH_THRESHOLD = 0.65  # 65% similarity required for company name match
 
@@ -739,7 +741,7 @@ def scrape_website_deep(page: Page, website_url: str) -> dict:
 
     # ── Étape 1 : page d'accueil ──────────────────────────────────────────────
     try:
-        page.goto(website_url, timeout=PAGE_TIMEOUT, wait_until="domcontentloaded")
+        page.goto(website_url, timeout=WEB_TIMEOUT, wait_until="domcontentloaded")
         visited.add(website_url)
 
         # Chercher mailto: directement dans la page d'accueil
@@ -789,7 +791,7 @@ def scrape_website_deep(page: Page, website_url: str) -> dict:
         visited.add(link)
 
         try:
-            page.goto(link, timeout=PAGE_TIMEOUT, wait_until="domcontentloaded")
+            page.goto(link, timeout=WEB_TIMEOUT, wait_until="domcontentloaded")
             page.wait_for_timeout(200)
 
             body_text = page.inner_text("body")
@@ -815,28 +817,35 @@ def scrape_website_deep(page: Page, website_url: str) -> dict:
             continue
 
     # ── Étape 4 : fallback URLs fixes ─────────────────────────────────────────
-    if not result["email"] or not result["phone"]:
+    # On ne déclenche le fallback QUE si l'email manque (champ prioritaire client).
+    # Si on a déjà l'email mais pas le téléphone, inutile de crawler 9 URLs.
+    # On limite aussi aux 4 chemins les plus probables et on coupe le timeout.
+    if not result["email"]:
         base = website_url.rstrip("/")
         fallback_paths = [
-            "/contact", "/nous-contacter", "/contact.html",
-            "/contactez-nous", "/contact-us", "/joindre",
-            "/a-propos", "/about", "/qui-sommes-nous",
-            "/informations", "/coordonnees",
+            "/contact", "/nous-contacter", "/contact.html", "/contactez-nous",
+            "/contact-us", "/joindre", "/a-propos", "/about",
+            "/qui-sommes-nous", "/informations", "/coordonnees",
         ]
+        tried = 0
         for path in fallback_paths:
+            if tried >= FALLBACK_MAX_PATHS:
+                break
             url = base + path
             if url in visited:
                 continue
             visited.add(url)
+            tried += 1
             try:
-                page.goto(url, timeout=8000, wait_until="domcontentloaded")
+                page.goto(url, timeout=WEB_TIMEOUT, wait_until="domcontentloaded")
                 body_text = page.inner_text("body")
                 contacts  = extract_best_contacts(body_text, site_domain)
                 if contacts["email"] and not result["email"]:
                     result["email"] = contacts["email"]
                 if contacts["phone"] and not result["phone"]:
                     result["phone"] = contacts["phone"]
-                if result["email"] and result["phone"]:
+                # Dès qu'on a l'email, on arrête (champ prioritaire)
+                if result["email"]:
                     break
             except Exception:
                 continue
