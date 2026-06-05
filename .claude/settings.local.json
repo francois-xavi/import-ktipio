@@ -33,7 +33,12 @@
       "Bash(ls -lh Dockerfile docker-compose.yml .dockerignore)",
       "Bash(ls -lh DOCKER*.md)",
       "Bash(ls -lh Dockerfile docker-compose.yml .dockerignore docker-run.* .env.example)",
-      "Bash(ls -1 Dockerfile docker-compose.yml .dockerignore docker-run.* DOCKER*.md .env.example)"
+      "Bash(ls -1 Dockerfile docker-compose.yml .dockerignore docker-run.* DOCKER*.md .env.example)",
+      "WebFetch(domain:www.qualibat.com)",
+      "WebFetch(domain:docs.dokploy.com)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }

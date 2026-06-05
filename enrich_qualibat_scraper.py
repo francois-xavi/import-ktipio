@@ -629,8 +629,10 @@ def main():
 
                 companies = fetch_pending_qualibat(conn, batch_size, current_offset)
                 if not companies:
-                    log.info("✅ Plus d'entreprises à traiter.")
-                    break
+                    log.info(f"⏸️  Rien à l'offset {current_offset} pour l'instant — "
+                             f"nouvelle tentative dans 60s…")
+                    time.sleep(60)
+                    continue
 
                 log.info(f"\n{'─' * 55}")
                 log.info(f"  OFFSET {current_offset} — {len(companies)} entreprises")
@@ -673,11 +675,12 @@ def main():
                     if i < len(companies) - 1 and args.delay > 0:
                         time.sleep(args.delay)
 
-                if len(companies) < batch_size:
-                    log.info("✅ Dernière page.")
-                    break
-
-                current_offset += len(companies)
+                # ⚠️ Ne PAS incrémenter l'offset.
+                # update_qualibat_db met qualibat_verified_at = NOW() pour CHAQUE
+                # entreprise traitée (même sans qualif trouvée) : elle sort du jeu
+                # (WHERE qualibat_verified_at IS NULL). Ré-interroger au MÊME offset
+                # renvoie de nouvelles entreprises. Incrémenter ferait SAUTER des
+                # entreprises non vérifiées.
 
         except KeyboardInterrupt:
             log.info("\n⛔ Arrêt (Ctrl+C)")

@@ -1343,8 +1343,10 @@ def main():
                 # Lire depuis la DB
                 companies = fetch_pending_db(conn, batch_size, current_offset)
                 if not companies:
-                    log.info("✅ Plus d'entreprises à traiter.")
-                    break
+                    log.info(f"⏸️  Rien à l'offset {current_offset} pour l'instant — "
+                             f"nouvelle tentative dans 60s…")
+                    time.sleep(60)
+                    continue
 
                 log.info(f"\n{'─'*55}")
                 log.info(f"  OFFSET {current_offset} — {len(companies)} entreprises")
@@ -1408,11 +1410,11 @@ def main():
                 # Stats après chaque batch
                 print_stats_db(conn)
 
-                if len(companies) < batch_size:
-                    log.info("✅ Dernière page.")
-                    break
-
-                current_offset += len(companies)
+                # ⚠️ On NE PAS incrémenter l'offset.
+                # La requête filtre déjà les entreprises traitées (gr.siret IS NULL) :
+                # elles sortent du jeu de résultats. Ré-interroger au MÊME offset
+                # renvoie systématiquement de nouvelles entreprises non traitées.
+                # Incrémenter ferait SAUTER des entreprises non enrichies.
 
         except KeyboardInterrupt:
             log.info("\n⛔ Arrêt (Ctrl+C)")

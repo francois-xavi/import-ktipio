@@ -27,7 +27,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "660000", "--batch-size", "50", "--delay", "5"]
+    command: ["--offset", "10000", "--batch-size", "50", "--delay", "5"]
     restart: unless-stopped
     deploy:
       resources:
@@ -45,7 +45,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "693000", "--batch-size", "50", "--delay", "5"]
+    command: ["--offset", "11000", "--batch-size", "50", "--delay", "5"]
     restart: unless-stopped
     deploy:
       resources:
@@ -62,7 +62,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "726000", "--batch-size", "50", "--delay", "5"]
+    command: ["--offset", "12000", "--batch-size", "50", "--delay", "5"]
     restart: unless-stopped
     deploy:
       resources:
@@ -79,7 +79,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "759000", "--batch-size", "50", "--delay", "5"]
+    command: ["--offset", "13000", "--batch-size", "50", "--delay", "5"]
     restart: unless-stopped
     deploy:
       resources:
@@ -96,7 +96,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "792000", "--batch-size", "50", "--delay", "5"]
+    command: ["--offset", "14000", "--batch-size", "50", "--delay", "5"]
     restart: unless-stopped
     deploy:
       resources:
@@ -113,7 +113,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "825000", "--batch-size", "50", "--delay", "5"]
+    command: ["--offset", "15000", "--batch-size", "50", "--delay", "5"]
     restart: unless-stopped
     deploy:
       resources:

@@ -49,7 +49,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "172000", "--batch-size", "50", "--delay", "1"]
+    command: ["--offset", "1000", "--batch-size", "50", "--delay", "1"]
     restart: unless-stopped
     volumes:
       - ../files/logs:/app/logs
@@ -76,7 +76,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "344000", "--batch-size", "50", "--delay", "1"]
+    command: ["--offset", "2000", "--batch-size", "50", "--delay", "1"]
     restart: unless-stopped
     volumes:
       - ../files/logs:/app/logs
@@ -103,7 +103,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "516000", "--batch-size", "50", "--delay", "1"]
+    command: ["--offset", "3000", "--batch-size", "50", "--delay", "1"]
     restart: unless-stopped
     volumes:
       - ../files/logs:/app/logs
@@ -130,7 +130,7 @@ services:
       PYTHONUNBUFFERED: "1"
       PLAYWRIGHT_HEADLESS: "1"
       LOG_LEVEL: "INFO"
-    command: ["--offset", "688000", "--batch-size", "50", "--delay", "1"]
+    command: ["--offset", "4000", "--batch-size", "50", "--delay", "1"]
     restart: unless-stopped
     volumes:
       - ../files/logs:/app/logs
