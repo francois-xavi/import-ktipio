@@ -91,11 +91,14 @@ def fetch_pending_qualibat(conn, batch_size: int, offset: int) -> list[dict]:
     Récupère les entreprises BTP non encore vérifiées Qualibat.
     Priorité aux entreprises déjà enrichies (reviews_enriched_status = 'done').
     """
+    # NB : on NE filtre PAS sur is_qualibat. Une entreprise marquée
+    # is_qualibat=TRUE par l'import RGE n'a pas pour autant ses qualifications
+    # détaillées scrapées. Le seul critère valable est qualibat_verified_at
+    # (= le scraper l'a réellement visitée).
     query = """
         SELECT siret, raison_sociale, ville
         FROM companies
         WHERE metier_principal IS NOT NULL
-          AND (is_qualibat IS NULL OR is_qualibat = false)
           AND (qualibat_verified_at IS NULL
                OR qualibat_verified_at < NOW() - INTERVAL '90 days')
         ORDER BY
@@ -131,7 +134,6 @@ def count_pending_qualibat(conn) -> int:
         SELECT COUNT(*)
         FROM companies
         WHERE metier_principal IS NOT NULL
-          AND (is_qualibat IS NULL OR is_qualibat = false)
           AND (qualibat_verified_at IS NULL
                OR qualibat_verified_at < NOW() - INTERVAL '90 days');
     """
