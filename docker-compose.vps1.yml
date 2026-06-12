@@ -1,0 +1,198 @@
+# Docker Compose VPS 1 — 10 workers Google Reviews (SSH direct, sans Dokploy)
+#
+# Remplace l'ancien lancement `nohup docker compose run --rm …` qui ne se
+# relançait JAMAIS après un crash. Ici chaque worker a restart: unless-stopped
+# → si un worker plante, Docker le redémarre automatiquement.
+#
+# Offsets 16000 → 25000 (pour ne pas chevaucher aureza 0-9000 et ubuntu 10000-15000)
+#
+# Lancement (sur le VPS 1) :
+#   cd ~/ktipio-enrichment
+#   git pull
+#   docker compose -f docker-compose.vps1.yml build
+#   docker compose -f docker-compose.vps1.yml up -d
+#
+# Voir l'état :   docker compose -f docker-compose.vps1.yml ps
+# Voir les logs : docker compose -f docker-compose.vps1.yml logs -f --tail=50
+# Arrêter :       docker compose -f docker-compose.vps1.yml down
+#
+# Variable env requise : NEON_DATABASE_URL (depuis le .env du dossier)
+
+services:
+
+  gr-vps1-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-1
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "16000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+        reservations: { memory: 300M, cpus: '0.2' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-2:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-2
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "17000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-3:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-3
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "18000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-4:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-4
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "19000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-5:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-5
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "20000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-6:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-6
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "21000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-7:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-7
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "22000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-8:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-8
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "23000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-9:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-9
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "24000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+  gr-vps1-10:
+    image: ktipio/gr-vps1:latest
+    container_name: gr-vps1-10
+    depends_on: [gr-vps1-1]
+    environment:
+      NEON_DATABASE_URL: ${NEON_DATABASE_URL}
+      SCRIPT: google_reviews_worker.py
+      PYTHONUNBUFFERED: "1"
+      PLAYWRIGHT_HEADLESS: "1"
+      LOG_LEVEL: "INFO"
+    command: ["--offset", "25000", "--batch-size", "50", "--delay", "5"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: { memory: 600M, cpus: '0.4' }
+    networks: [gr-vps1-net]
+
+networks:
+  gr-vps1-net:
+    driver: bridge
