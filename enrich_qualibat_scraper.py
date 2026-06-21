@@ -40,6 +40,8 @@ import psycopg2
 import psycopg2.extras
 from playwright.sync_api import sync_playwright, Page
 
+from watchdog import start_watchdog, mark_progress
+
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
@@ -616,7 +618,9 @@ def main():
                 return
 
             # Mode batch
+            start_watchdog(label=f"qualibat offset={args.offset}")
             while True:
+                mark_progress()  # itération vivante → pas un gel
                 if args.limit and total_processed >= args.limit:
                     break
 
@@ -673,6 +677,7 @@ def main():
                         total_processed += 1
                         if result["is_qualibat"]:
                             total_qualibat_found += 1
+                    mark_progress()  # entreprise traitée
 
                     if i < len(companies) - 1 and args.delay > 0:
                         time.sleep(args.delay)

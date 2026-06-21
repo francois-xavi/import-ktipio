@@ -8,6 +8,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Install Playwright + toutes ses dépendances système automatiquement
 RUN playwright install --with-deps chromium
 
+COPY watchdog.py .
 COPY google_reviews_worker.py .
 COPY batch_enrich.py .
 COPY check_db_columns.py .

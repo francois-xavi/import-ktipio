@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Diagnostic : quand les scrapers se sont-ils arrêtés ? Histogramme par heure."""
+"""Vérifie la FRAÎCHEUR des colonnes companies utilisées par le dashboard."""
 import os
 import psycopg2
 
@@ -16,37 +16,33 @@ conn = psycopg2.connect(url, connect_timeout=30)
 cur = conn.cursor()
 
 cur.execute("SELECT NOW();")
-print(f"Heure actuelle de la base (UTC) : {cur.fetchone()[0]}\n")
+print(f"NOW() base (UTC) : {cur.fetchone()[0]}\n")
 
-print("=" * 64)
-print("  🌐 GOOGLE — activité par heure (dernières 48h)")
-print("=" * 64)
+print("=" * 70)
+print("  GOOGLE — companies.reviews_enriched_at (source dashboard)")
+print("=" * 70)
 cur.execute("""
-    SELECT date_trunc('hour', scraped_at) AS h, COUNT(*)
-    FROM google_reviews
-    WHERE scraped_at > NOW() - INTERVAL '48 hours'
-    GROUP BY h ORDER BY h DESC LIMIT 12;
+    SELECT
+        COUNT(*) FILTER (WHERE reviews_enriched_at > NOW() - INTERVAL '5 minutes') AS m5,
+        COUNT(*) FILTER (WHERE reviews_enriched_at > NOW() - INTERVAL '1 hour')     AS h1,
+        MAX(reviews_enriched_at) AS dernier
+    FROM companies;
 """)
-rows = cur.fetchall()
-if not rows:
-    print("  (aucune activité sur 48h)")
-for h, c in rows:
-    print(f"  {h}  →  {c:,}")
+m5, h1, last = cur.fetchone()
+print(f"  5 dern. min : {m5:,}   |   1 h : {h1:,}   |   dernier : {last}")
 
-print("\n" + "=" * 64)
-print("  🏅 QUALIBAT — activité par heure (dernières 48h)")
-print("=" * 64)
+print("\n" + "=" * 70)
+print("  QUALIBAT — companies.qualibat_verified_at (source dashboard)")
+print("=" * 70)
 cur.execute("""
-    SELECT date_trunc('hour', qualibat_verified_at) AS h, COUNT(*)
-    FROM companies
-    WHERE qualibat_verified_at > NOW() - INTERVAL '48 hours'
-    GROUP BY h ORDER BY h DESC LIMIT 12;
+    SELECT
+        COUNT(*) FILTER (WHERE qualibat_verified_at > NOW() - INTERVAL '5 minutes') AS m5,
+        COUNT(*) FILTER (WHERE qualibat_verified_at > NOW() - INTERVAL '1 hour')     AS h1,
+        MAX(qualibat_verified_at) AS dernier
+    FROM companies;
 """)
-rows = cur.fetchall()
-if not rows:
-    print("  (aucune activité sur 48h)")
-for h, c in rows:
-    print(f"  {h}  →  {c:,}")
+m5, h1, last = cur.fetchone()
+print(f"  5 dern. min : {m5:,}   |   1 h : {h1:,}   |   dernier : {last}")
 
 cur.close()
 conn.close()

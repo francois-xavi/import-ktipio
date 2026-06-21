@@ -57,6 +57,8 @@ else:
 from playwright.sync_api import Page, TimeoutError as PWTimeout, sync_playwright
 from tqdm import tqdm
 
+from watchdog import start_watchdog, mark_progress
+
 # Fix asyncio sur Windows (évite RuntimeError: cannot be called from a running event loop)
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -1335,7 +1337,9 @@ def main():
         page = ctx.new_page() if ctx else None
 
         try:
+            start_watchdog(label=f"google offset={args.offset}")
             while True:
+                mark_progress()  # itération vivante → pas un gel
                 if args.limit and total_processed >= args.limit:
                     break
 
@@ -1396,6 +1400,7 @@ def main():
                         if result.found:
                             total_found += 1
                         total_processed += 1
+                        mark_progress()  # entreprise traitée
 
                         if i < len(companies) - 1:
                             log.info(f"  ⏳ {args.delay}s…")
